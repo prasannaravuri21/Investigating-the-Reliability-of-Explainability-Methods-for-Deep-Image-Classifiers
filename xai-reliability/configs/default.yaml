@@ -1,0 +1,84 @@
+# ---------------------------------------------------------------------------
+# Experiment configuration.
+# Everything that could change a number lives here, so a result can always be
+# traced back to the settings that produced it.
+# ---------------------------------------------------------------------------
+
+seed: 0
+seeds: [0, 1, 2]            # Week 8: repeat runs for mean / std
+device: auto                # auto | cuda | cpu
+gpu_max_utilisation: 0.5    # duty-cycle cap on the GPU (1.0 = no cap); slows runs by 1/x, results unchanged
+                            # 0.7 ran the laptop GPU at ~82 C; 0.5 to keep it cooler
+
+data:
+  manifest: data/subset_manifest.csv
+  per_class: 1              # 1 image per class -> ~1000 images
+  n_classes: 1000
+  source: imagenetv2        # imagenet_val | imagenetv2 | imagefolder
+  root: null                # set on the command line: the extracted imagenetv2-matched-frequency-format-val folder
+  image_size: 224
+
+models:
+  - resnet50
+  - efficientnet_b0
+  - vit_b_16
+  - bcos_resnet50
+
+methods:
+  - gradcam
+  - integrated_gradients
+  - lrp
+  - rise
+  - gradient_shap
+# the B-cos built-in explanation is added automatically for bcos_* models
+
+attribution:
+  batch_size: 8
+  # Which class gets explained, and what ROAD counts as "still correct".
+  #   predicted     the model's own top-1 class. Faithfulness is about what the
+  #                 model computed, so this is the defensible default, and it
+  #                 keeps every image usable even when the model is wrong.
+  #   ground_truth  the dataset label. Only use this if you intend to measure
+  #                 explanations of correct decisions, and say so in the report.
+  target_mode: predicted
+  integrated_gradients:
+    n_steps: 32
+    baseline: zeros         # zeros | blur
+  gradient_shap:
+    n_samples: 16
+    stdevs: 0.09
+    max_forward_batch: 32   # images per backward pass (memory only; does not change the maps)
+  rise:
+    n_masks: 4000           # 2000 is usually enough for a pilot run
+    s: 7                    # coarse mask grid
+    p: 0.5                  # probability a cell is kept
+    batch_size: 16          # small bursts keep the GPU cap smooth (64 gave 35-100% swings); maps unchanged
+  lrp:
+    composite: epsilon_plus_flat
+
+road:
+  ks: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  orders: [morf, lerf]
+  noise_std: 0.01           # noise added to the imputed pixels (Rong et al., 2022)
+  batch_size: 16
+
+idsds:
+  # 4x4 = 16 patches of 56x56, the main setting of Hesse et al. (2024). An 8x8
+  # grid was tried in the pilot: single 28x28 deletions barely move a ResNet-50
+  # logit, so the per-patch drops were mostly noise and every method scored ~0.
+  grid: 4
+  finetune:
+    epochs: 1
+    lr: 0.0001
+    batch_size: 32
+    n_drop: 1               # patches removed per augmented training image
+    drop_prob: 0.5          # share of training images augmented (Hesse et al.: half)
+    max_steps: 2000         # cap so a pilot fine-tune fits in a few GPU-hours
+  deletion_fill: mean       # mean | zero
+  batch_size: 32
+
+paths:
+  results: results
+  attributions: results/attributions
+  checkpoints: checkpoints
+  figures: results/figures

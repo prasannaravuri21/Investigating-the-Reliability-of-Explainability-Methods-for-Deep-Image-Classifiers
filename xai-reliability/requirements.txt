@@ -1,0 +1,21 @@
+# Core
+torch>=2.2.0
+torchvision>=0.17.0
+numpy>=1.24
+scipy>=1.11
+pandas>=2.0
+pyyaml>=6.0
+Pillow>=10.0
+tqdm>=4.66
+
+# Attribution methods
+captum>=0.7.0          # Integrated Gradients, GradientSHAP
+zennit>=0.5.1          # Layer-wise Relevance Propagation
+bcos>=0.1.3            # B-cos v2 models (also loadable via torch.hub)
+
+# Optional: only needed for scripts/w3_prepare_imagenet_val.py --mode hf
+datasets>=2.19        # Hugging Face download route for the ImageNet validation set
+
+# Analysis and plots
+matplotlib>=3.7
+seaborn>=0.13
